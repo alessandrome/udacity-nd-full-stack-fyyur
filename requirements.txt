@@ -1,4 +1,5 @@
 babel
 python-dateutil==2.6.0
+flask-sqlalchemy
 flask-moment
 flask-wtf
