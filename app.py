@@ -56,9 +56,9 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
+    seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.Text)
-    website = db.column(db.String(120))
+    website = db.Column(db.String(length=120))
     shows = db.relationship('Show', backref='artist')
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
@@ -361,7 +361,7 @@ def show_artist(artist_id):
             "venue_id": show.venue.id,
             "venue_name": show.venue.name,
             "venue_image_link": show.venue.image_link,
-            "start_time": show.start_time
+            "start_time": str(show.start_time)
         }
         print(show.start_time)
         if show.start_time <= now_datetime:
@@ -448,6 +448,7 @@ def create_artist_submission():
     artist.genres = ';'.join(form_data.getlist('genres'))
     artist.image_link = form_data['image_link']
     artist.facebook_link = form_data['facebook_link']
+    artist.seeking_venue = False
     db.session.add(artist)
     db.session.commit()
     print(form_data['genres'])
