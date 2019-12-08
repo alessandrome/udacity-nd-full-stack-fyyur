@@ -26,6 +26,8 @@ migrate = Migrate(app, db)
 
 # TODO: connect to a local postgresql database
 
+row_to_dict = lambda r: {c.name: str(getattr(r, c.name)) for c in r.__table__.columns}
+
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
@@ -39,8 +41,10 @@ class Venue(db.Model):
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
+    genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String(length=120))
     shows = db.relationship('Show', backref='venue')
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
@@ -181,62 +185,29 @@ def show_venue(venue_id):
         "past_shows_count": 1,
         "upcoming_shows_count": 0,
     }
-    data2={
-        "id": 2,
-        "name": "The Dueling Pianos Bar",
-        "genres": ["Classical", "R&B", "Hip-Hop"],
-        "address": "335 Delancey Street",
-        "city": "New York",
-        "state": "NY",
-        "phone": "914-003-1132",
-        "website": "https://www.theduelingpianos.com",
-        "facebook_link": "https://www.facebook.com/theduelingpianos",
-        "seeking_talent": False,
-        "image_link": "https://images.unsplash.com/photo-1497032205916-ac775f0649ae?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=750&q=80",
-        "past_shows": [],
-        "upcoming_shows": [],
-        "past_shows_count": 0,
-        "upcoming_shows_count": 0,
-    }
-    data3={
-        "id": 3,
-        "name": "Park Square Live Music & Coffee",
-        "genres": ["Rock n Roll", "Jazz", "Classical", "Folk"],
-        "address": "34 Whiskey Moore Ave",
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "415-000-1234",
-        "website": "https://www.parksquarelivemusicandcoffee.com",
-        "facebook_link": "https://www.facebook.com/ParkSquareLiveMusicAndCoffee",
-        "seeking_talent": False,
-        "image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-        "past_shows": [{
-            "artist_id": 5,
-            "artist_name": "Matt Quevedo",
-            "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-            "start_time": "2019-06-15T23:00:00.000Z"
-        }],
-        "upcoming_shows": [{
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-01T20:00:00.000Z"
-        }, {
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-08T20:00:00.000Z"
-        }, {
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-15T20:00:00.000Z"
-        }],
-        "past_shows_count": 1,
-        "upcoming_shows_count": 1,
-    }
-    data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
-    return render_template('pages/show_venue.html', venue=data)
+    venue = db.session.query(Venue).filter_by(id=venue_id).first()
+    if not venue:
+        flash('Venue not found')
+        redirect('/venues')
+    result = row_to_dict(venue)
+    result["genres"] = result["genres"].split(';')
+    result["past_shows"] = []
+    result["upcoming_shows"] = []
+    now_datetime = datetime.now()
+    for show in venue.shows:
+        show_obj = {
+            "artist_id": show.artist.id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": str(show.start_time)
+        }
+        if show.start_time <= now_datetime:
+            result['past_shows'].append(show_obj)
+        else:
+            result['upcoming_shows'].append(show_obj)
+    result['past_shows_count'] = len(result['past_shows'])
+    result['upcoming_shows_count'] = len(result['upcoming_shows'])
+    return render_template('pages/show_venue.html', venue=result)
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -255,7 +226,8 @@ def create_venue_submission():
         # on successful db insert, flash success
         data = request.form
         venue = Venue(name=data['name'], address=data['address'], city=data['city'], state=data['state'],
-                      phone=data['phone'], facebook_link=data['facebook_link'])
+                      phone=data['phone'], image_link=data['image_link'], facebook_link=data['facebook_link'],
+                      website=data['website'])
         db.session.add(venue)
         db.session.commit()
         flash('Venue ' + request.form['name'] + ' was successfully listed!')
@@ -448,6 +420,7 @@ def create_artist_submission():
     artist.genres = ';'.join(form_data.getlist('genres'))
     artist.image_link = form_data['image_link']
     artist.facebook_link = form_data['facebook_link']
+    artist.website = form_data['website']
     artist.seeking_venue = False
     db.session.add(artist)
     db.session.commit()
