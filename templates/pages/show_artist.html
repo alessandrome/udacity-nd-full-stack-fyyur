@@ -41,6 +41,7 @@
 		</p>
 		{% endif %}
         <a href="/artists/{{ artist.id }}/edit"><button class="btn btn-default btn-lg">Edit artist</button></a>
+        <a href="/artists/{{ artist.id }}/delete"><button class="btn btn--delete btn-lg">Delete</button></a>
     </div>
 	<div class="col-sm-6">
 		<img src="{{ artist.image_link }}" alt="Venue Image" />
