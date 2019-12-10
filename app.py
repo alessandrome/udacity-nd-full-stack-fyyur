@@ -387,13 +387,13 @@ def edit_artist(artist_id):
         "facebook_link": artist.facebook_link,
         "website": artist.website,
     }
-    return render_template('forms/edit_artist.html', form=form, artist=artist)
+    return render_template('forms/edit_artist.html', form=form, artist=result)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
     # TODO: take values from the form submitted, and update existing
     # artist record with ID <artist_id> using the new attributes
-    artist = db.session.query(Artist).filter(Artist.id == artist_id)
+    artist = db.session.query(Artist).filter(Artist.id == artist_id).first()
     form_data = request.form
     artist.name = form_data['name']
     artist.city = form_data['city']
