@@ -94,9 +94,9 @@ def search_venues():
     :return: Template with rendered retrieved filtered venues
     """
     search_term = request.form.get('search_term', '')
-    venues = db.session.query(Venue).filter((Venue.name.like('%{}%'.format(search_term))) |
-                                            (Venue.city.like('%{}%'.format(search_term))) |
-                                            (Venue.state.like('%{}%'.format(search_term)))).all()
+    venues = db.session.query(Venue).filter((Venue.name.ilike('%{}%'.format(search_term))) |
+                                            (Venue.city.ilike('%{}%'.format(search_term))) |
+                                            (Venue.state.ilike('%{}%'.format(search_term)))).all()
     response = {
         "count": 0,
         "data": []
@@ -223,9 +223,9 @@ def search_artists():
     :return: Template with rendered retrieved filtered artists
     """
     search_term = request.form.get('search_term', '')
-    artists = db.session.query(Artist).filter((Artist.name.like('%{}%'.format(search_term))) |
-                                            (Artist.city.like('%{}%'.format(search_term))) |
-                                            (Artist.state.like('%{}%'.format(search_term)))).all()
+    artists = db.session.query(Artist).filter((Artist.name.ilike('%{}%'.format(search_term))) |
+                                            (Artist.city.ilike('%{}%'.format(search_term))) |
+                                            (Artist.state.ilike('%{}%'.format(search_term)))).all()
     response = {
         "count": 0,
         "data": []
@@ -472,8 +472,8 @@ def search_shows():
     :return: Rendered template of filtered shows
     """
     search_term = request.form.get('search_term', '')
-    shows = db.session.query(Show).filter((Show.artist.has(Artist.name.like('%{}%'.format(search_term)))) |
-                                          (Show.venue.has(Venue.name.like('%{}%'.format(search_term))))).all()
+    shows = db.session.query(Show).filter((Show.artist.has(Artist.name.ilike('%{}%'.format(search_term)))) |
+                                          (Show.venue.has(Venue.name.ilike('%{}%'.format(search_term))))).all()
     result = []
     for show in shows:
         artist = show.artist
